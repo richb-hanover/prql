@@ -96,8 +96,7 @@ and a
 [pre-built dev container base Docker image](https://github.com/PRQL/prql/pkgs/container/prql-devcontainer-base).
 Learn more about Dev Containers at
 [https://containers.dev/](https://containers.dev/)
-
-Currently, the tools for Rust are already installed in the pre-built image, and,
+The tools for Rust are already installed in the pre-built image, and,
 Node.js, Python and others are configured to be installed when build the
 container.
 
@@ -106,9 +105,15 @@ is on developing with VS Code in a container by
 [GitHub Codespaces](https://docs.github.com/en/codespaces/overview) or
 [VS Code Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
 
-To use a Dev Container on a local computer with VS Code, install the
+**To use a Dev Container with VS Code on a local computer:** 
+
+1. Install the
 [VS Code Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-and its system requirements. Then refer to the links above to get started.
+along with any system requirements.
+2. Open the _prql_ directory in VS Code. You will likely see an alert saying that there is a devcontainer,
+  asking whether to open as a container. Allow it.
+3. Within VS Code, open a Terminal window (Terminal menu -> New Terminal)
+4. Type any of the `task` commands - for example, `task web:run-playground`. The container will perform that action and tell what to do (for example, how to open the Playground in a browser)
 
 ### Option 4: Use nix development environment
 
