@@ -121,13 +121,13 @@ let window = func
 let append = `default_db.bottom`<relation> top<relation> -> <relation> internal append
 let intersect = `default_db.bottom`<relation> top<relation> -> <relation> (
   t = top
-  join (b = bottom) (tuple_every (tuple_map _eq (tuple_zip t.* b.*)))
+  join (b = bottom) (tuple_reduce std.and (tuple_map _eq (tuple_zip t.* b.*)))
   select t.*
 )
 let remove = `default_db.bottom`<relation> top<relation> -> <relation> (
   t = top
-  join side:left (b = bottom) (tuple_every (tuple_map _eq (tuple_zip t.* b.*)))
-  filter (tuple_every (tuple_map _is_null b.*))
+  join side:left (b = bottom) (tuple_reduce std.and (tuple_map _eq (tuple_zip t.* b.*)))
+  filter (tuple_reduce std.and (tuple_map _is_null b.*))
   select t.*
 )
 let loop = func
@@ -199,7 +199,7 @@ let as = `noresolve.type` column -> internal std.as
 let in = pattern value -> <bool> internal in
 
 ## Tuple functions
-let tuple_every = func list -> <bool> internal tuple_every
+let tuple_reduce = func initial:"__missing" fn <func> list -> internal tuple_reduce
 let tuple_map = func fn <func> list -> internal tuple_map
 let tuple_zip = func a b -> internal tuple_zip
 let _eq = func a -> internal _eq
@@ -224,8 +224,13 @@ module text {
 }
 
 ## Date functions
+
 module date {
+  # Returns the current date and time as a timestamp.
+  let now = -> <timestamp> internal std.date.now
   let to_text = format<text> column -> <text> internal std.date.to_text
+  let diff = `noresolve.unit` start end -> <int> internal std.date.diff
+  let trunc = unit<text> column -> internal std.date.trunc
 }
 
 ## File-reading functions, primarily for DuckDB
@@ -244,6 +249,3 @@ let read_json = source<text> -> <relation> internal std.read_json
 module `prql` {
   let version = -> <text> internal prql_version
 }
-
-# Deprecated, will be removed in 0.12.0
-let prql_version = -> <text> internal prql_version

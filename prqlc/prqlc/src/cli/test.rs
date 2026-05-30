@@ -13,7 +13,7 @@ use walkdir::WalkDir;
 #[cfg(not(windows))] // Windows has slightly different output (e.g. `prqlc.exe`), so we exclude.
 #[test]
 fn help() {
-    assert_cmd_snapshot!(prqlc_command().arg("--help"), @r"
+    assert_cmd_snapshot!(prqlc_command().arg("--help"), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -24,7 +24,7 @@ fn help() {
       lex               Lex into Lexer Representation
       fmt               Parse & generate PRQL code back
       collect           Parse the whole project and collect it into a single PRQL source file
-      debug             Commands for meant for debugging, prone to change
+      debug             Commands meant for debugging, prone to change
       experimental      Experimental commands are prone to change
       compile           Parse, resolve, lower into RQ & compile to SQL
       watch             Watch a directory and compile .prql files to .sql files
@@ -42,7 +42,7 @@ fn help() {
     ");
 
     // without arguments
-    assert_cmd_snapshot!(prqlc_command(), @r"
+    assert_cmd_snapshot!(prqlc_command(), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -53,7 +53,7 @@ fn help() {
       lex               Lex into Lexer Representation
       fmt               Parse & generate PRQL code back
       collect           Parse the whole project and collect it into a single PRQL source file
-      debug             Commands for meant for debugging, prone to change
+      debug             Commands meant for debugging, prone to change
       experimental      Experimental commands are prone to change
       compile           Parse, resolve, lower into RQ & compile to SQL
       watch             Watch a directory and compile .prql files to .sql files
@@ -73,7 +73,7 @@ fn help() {
 
 #[test]
 fn get_targets() {
-    assert_cmd_snapshot!(prqlc_command().arg("list-targets"), @r"
+    assert_cmd_snapshot!(prqlc_command().arg("list-targets"), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -86,6 +86,7 @@ fn get_targets() {
     sql.glaredb
     sql.mssql
     sql.mysql
+    sql.oracle
     sql.postgres
     sql.redshift
     sql.sqlite
@@ -99,7 +100,7 @@ fn get_targets() {
 fn compile() {
     assert_cmd_snapshot!(prqlc_command()
         .args(["compile", "--hide-signature-comment"])
-        .pass_stdin("from tracks"), @r"
+        .pass_stdin("from tracks"), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -115,7 +116,7 @@ fn compile() {
 #[cfg(not(windows))] // Windows has slightly different output (e.g. `prqlc.exe`), so we exclude.
 #[test]
 fn compile_help() {
-    assert_cmd_snapshot!(prqlc_command().args(["compile", "--help"]), @r"
+    assert_cmd_snapshot!(prqlc_command().args(["compile", "--help"]), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -193,7 +194,7 @@ let long_query = (
   take 20
 )
 from long_query
-  "#), @r"
+  "#), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -277,7 +278,7 @@ fn compile_project() {
         "main",
     ]);
 
-    assert_cmd_snapshot!(cmd, @r"
+    assert_cmd_snapshot!(cmd, @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -331,7 +332,7 @@ fn compile_project() {
         project_path().to_str().unwrap(),
         "-",
         "favorite_artists",
-    ]), @r"
+    ]), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -358,7 +359,7 @@ fn compile_project() {
 #[test]
 fn format() {
     // Test stdin formatting
-    assert_cmd_snapshot!(prqlc_command().args(["fmt"]).pass_stdin("from tracks | take 20"), @r"
+    assert_cmd_snapshot!(prqlc_command().args(["fmt"]).pass_stdin("from tracks | take 20"), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -423,7 +424,7 @@ fn compare_directories(dir1: &Path, dir2: &Path) {
 fn debug() {
     assert_cmd_snapshot!(prqlc_command()
         .args(["debug", "lineage"])
-        .pass_stdin("from tracks | select {artist, album}"), @r"
+        .pass_stdin("from tracks | select {artist, album}"), @"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -434,29 +435,29 @@ fn debug() {
           name:
           - tracks
           - artist
-          target_id: 118
+          target_id: 120
           target_name: null
         - !Single
           name:
           - tracks
           - album
-          target_id: 119
+          target_id: 121
           target_name: null
         inputs:
-        - id: 116
+        - id: 118
           name: tracks
           table:
           - default_db
           - tracks
     nodes:
-    - id: 116
+    - id: 118
       kind: Ident
       span: 1:0-11
       ident: !Ident
       - default_db
       - tracks
-      parent: 121
-    - id: 118
+      parent: 123
+    - id: 120
       kind: Ident
       span: 1:22-28
       ident: !Ident
@@ -464,9 +465,9 @@ fn debug() {
       - tracks
       - artist
       targets:
-      - 116
-      parent: 120
-    - id: 119
+      - 118
+      parent: 122
+    - id: 121
       kind: Ident
       span: 1:30-35
       ident: !Ident
@@ -474,21 +475,21 @@ fn debug() {
       - tracks
       - album
       targets:
-      - 116
-      parent: 120
-    - id: 120
+      - 118
+      parent: 122
+    - id: 122
       kind: Tuple
       span: 1:21-36
       children:
-      - 118
-      - 119
-      parent: 121
-    - id: 121
+      - 120
+      - 121
+      parent: 123
+    - id: 123
       kind: 'TransformCall: Select'
       span: 1:14-36
       children:
-      - 116
-      - 120
+      - 118
+      - 122
     ast:
       name: Project
       stmts:
@@ -603,7 +604,7 @@ fn normalize_prqlc(cmd: &mut Command) -> &mut Command {
 
 #[test]
 fn compile_no_prql_files() {
-    assert_cmd_snapshot!(prqlc_command().args(["compile", "README.md"]), @r"
+    assert_cmd_snapshot!(prqlc_command().args(["compile", "README.md"]), @"
     success: false
     exit_code: 1
     ----- stdout -----
@@ -615,7 +616,7 @@ fn compile_no_prql_files() {
 
 #[test]
 fn lex() {
-    assert_cmd_snapshot!(prqlc_command().args(["lex"]).pass_stdin("from tracks"), @r"
+    assert_cmd_snapshot!(prqlc_command().args(["lex"]).pass_stdin("from tracks"), @"
     success: true
     exit_code: 0
     ----- stdout -----

@@ -17,10 +17,12 @@ mod atoms {
       ansi,
       bigquery,
       clickhouse,
+      duckdb,
       glaredb,
       generic,
       mssql,
       mysql,
+      oracle,
       postgres,
       redshift,
       sqlite,
@@ -52,6 +54,8 @@ fn target_from_atom(a: Atom) -> prqlc::Target {
         BigQuery
     } else if a == atoms::clickhouse() {
         ClickHouse
+    } else if a == atoms::duckdb() {
+        DuckDb
     } else if a == atoms::generic() {
         Generic
     } else if a == atoms::glaredb() {
@@ -60,6 +64,8 @@ fn target_from_atom(a: Atom) -> prqlc::Target {
         MsSql
     } else if a == atoms::mysql() {
         MySql
+    } else if a == atoms::oracle() {
+        Oracle
     } else if a == atoms::postgres() {
         Postgres
     } else if a == atoms::redshift() {
@@ -97,7 +103,7 @@ pub struct CompileOptions {
 
     /// Target dialect to compile to.
     ///
-    /// This is only changes the output for a relatively small subset of
+    /// This only changes the output for a relatively small subset of
     /// features.
     ///
     /// If something does not work in a specific dialect, please raise in a

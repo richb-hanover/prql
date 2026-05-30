@@ -1,7 +1,7 @@
 name: prqlc
 title: PRQL Compiler
 base: core22
-version: "0.13.11"
+version: "0.13.13"
 summary: CLI for PRQL, a modern language for transforming data
 description: |
   prqlc is the CLI for the PRQL compiler. It compiles PRQL to SQL, and offers various diagnostics.
@@ -21,7 +21,7 @@ parts:
     plugin: nil
     override-pull:
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      --profile minimal --default-toolchain 1.69.0
+      --profile minimal --default-toolchain 1.75.0
   prqlc:
     plugin: rust
     after: [rust-deps]

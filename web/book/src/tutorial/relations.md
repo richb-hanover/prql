@@ -19,7 +19,7 @@ looks like this:
 A relation is composed of rows. Each row in a relation contains a value for each
 of the relation's columns. Each column in a relation has a unique name and a
 designated data type. The table above is a relation, and has columns named
-`invoice_id`and `customer_id` each with a data type of "integer number", a
+`invoice_id` and `customer_id` each with a data type of "integer number", a
 `billing_city` column with a data type of "text", several other columns, and a
 `total` column that contains floating-point numbers.
 
@@ -48,15 +48,13 @@ The `select` function picks the columns to pass through based on a list and
 discards all others. Formally, that list is a _tuple_ of comma-separated
 expressions wrapped in `{ ... }`.
 
-Suppose we only need the `order_id` and `total` columns. Use `select` &mdash; the named columns pass through
-to the next transform.
-None of the other columns do.
-_(Try it in the
-[Playground.](https://prql-lang.org/playground/))_
+Suppose we only need the `order_id` and `total` columns. Use `select` &mdash;
+the named columns pass through to the next transform. None of the other columns
+do. _(Try it in the [Playground.](https://prql-lang.org/playground/))_
 
 ```prql no-eval
 from invoices
-select { order_id, total }
+select { invoice_id, total }
 ```
 
 We can write the items in the tuple on one or several lines: trailing commas are
@@ -74,8 +72,7 @@ select {
 This is the same query as above, rewritten on multiple lines, and assigning
 `OrderID` and `Total` names to the columns.
 
-Once we `select` certain columns,
-subsequent transforms have access only to
+Once we `select` certain columns, subsequent transforms have access only to
 those columns named in the tuple.
 
 ### `derive` transform
@@ -88,14 +85,10 @@ from invoices
 derive { VAT = total * 0.19 }
 ```
 
-The result of this transform is to pass through
-all of the existing columns as well as the new
-"derived" column.
-The values for the new column can be a constant
-(such as a number or a string), or
-can be computed from the value of an existing column.
-NB In this example, the new column
-is assigned the name `VAT`.
+The result of this transform is to pass through all of the existing columns as
+well as the new "derived" column. The values for the new column can be a
+constant (such as a number or a string), or can be computed from the value of an
+existing column. NB In this example, the new column is assigned the name `VAT`.
 
 ### `join` transform
 
@@ -108,10 +101,9 @@ from invoices
 join customers ( ==customer_id )
 ```
 
-This example "connects" the `invoices` and `customers` relations
-by creating new rows that include all columns from each relation.
-The `customer_id` column is used to match the rows.
-If there are identical values in the `customer_id` 
+This example "connects" the `invoices` and `customers` relations by creating new
+rows that include all columns from each relation. The `customer_id` column is
+used to match the rows. If there are identical values in the `customer_id`
 column in each relation, the rows are joined.
 
 It is frequently useful to assign an _alias_ to both relations being joined
@@ -123,11 +115,11 @@ join cust=customers ( inv.customer_id == cust.customer_id)
 ```
 
 In the example above, the alias `inv` represents the `invoices` relation and
-`cust` represents the `customers` relation.
-Aliases also make it possible to refer to
-`inv.billing_city` and `cust.last_name` unambiguously.
+`cust` represents the `customers` relation. Aliases also make it possible to
+refer to `inv.billing_city` and `cust.last_name` unambiguously.
 
-The query above has the same result as the previous query: `==customer_id` is shorthand for using the same column name from both relations. 
+The query above has the same result as the previous query: `==customer_id` is
+shorthand for using the same column name from both relations.
 
 ### Summary
 
@@ -136,10 +128,10 @@ transforms change the number of columns in a table. The first two never affect
 the number of rows in a table. `join` may change the number of rows, depending
 on the chosen type of join.
 
-This final example combines these transforms into a single query. It illustrates _a pipeline_ -
-the fundamental basis of PRQL. We simply add new lines (transforms)
-at the end of the query. Each transform modifies the relation produced by the
-statement above to produce the final result.
+This final example combines these transforms into a single query. It illustrates
+_a pipeline_ - the fundamental basis of PRQL. We simply add new lines
+(transforms) at the end of the query. Each transform modifies the relation
+produced by the statement above to produce the final result.
 
 ```prql no-eval
 from inv=invoices                    # start with invoices

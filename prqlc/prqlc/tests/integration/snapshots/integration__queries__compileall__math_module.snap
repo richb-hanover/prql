@@ -72,7 +72,6 @@ input_file: prqlc/prqlc/tests/integration/queries/math_module.prql
 +FETCH FIRST
 +  5 ROWS ONLY
 
-
 --- generic
 +++ postgres
 @@ -1,19 +1,19 @@

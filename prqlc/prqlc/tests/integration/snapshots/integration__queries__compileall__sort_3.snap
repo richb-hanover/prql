@@ -69,9 +69,6 @@ input_file: prqlc/prqlc/tests/integration/queries/sort_3.prql
 -  table_3."AA"
 +  table_3.`AA`
 
-
-
-
 --- generic
 +++ mysql
 @@ -1,52 +1,52 @@

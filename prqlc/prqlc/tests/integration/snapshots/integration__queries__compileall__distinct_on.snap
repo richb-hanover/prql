@@ -73,10 +73,6 @@ input_file: prqlc/prqlc/tests/integration/queries/distinct_on.prql
    genre_id DESC,
    media_type_id
 
-
-
-
-
 --- generic
 +++ postgres
 @@ -1,25 +1,21 @@

@@ -16,8 +16,8 @@ how the date or timestamp should be structured.
 
 <!-- prettier-ignore -->
 > [!NOTE]
-> For now the supported DBs are: Clickhouse, DuckDB, MySQL, MSSQL and
-> Postgres.
+> For now the supported DBs are: BigQuery, Clickhouse, DuckDB, MySQL, MSSQL
+> and Postgres.
 
 ```prql
 prql target:sql.duckdb
@@ -40,6 +40,37 @@ prql target:sql.mysql
 
 from invoices
 select (invoice_date | date.to_text "%d/%m/%Y")
+
+```
+
+### `now`
+
+Returns the current date and time as a timestamp.
+
+```prql
+from test_tables
+filter test_time < date.now
+```
+
+The SQL output varies by dialect:
+
+| Dialect    | SQL output            |
+| ---------- | --------------------- |
+| Generic    | `CURRENT_TIMESTAMP`   |
+| MySQL      | `NOW()`               |
+| BigQuery   | `CURRENT_TIMESTAMP()` |
+| Clickhouse | `now()`               |
+| Others     | `CURRENT_TIMESTAMP`   |
+
+### `trunc`
+
+Truncates a date or timestamp to a given unit.
+
+```prql
+prql target:sql.postgres
+
+from events
+select (event_time | date.trunc "day")
 
 ```
 

@@ -120,6 +120,30 @@ module text {
   let ends_with = suffix column -> s"{column:0} LIKE CONCAT('%', {suffix:0})"
 }
 
+# Date functions
+module date {
+  # ClickHouse: https://clickhouse.com/docs/en/sql-reference/functions/date-time-functions
+  # DuckDB: https://duckdb.org/docs/sql/functions/date
+  # MariaDB: https://mariadb.com/kb/en/datediff/
+  # MySQL: https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html
+  # MSSQL: https://learn.microsoft.com/en-us/sql/t-sql/functions/datediff-transact-sql
+  # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/datediff
+  # Redshift: https://docs.aws.amazon.com/redshift/latest/dg/r_DATEDIFF_function.html
+  let diff = unit start end -> s"DATEDIFF({unit:0}, {start:0}, {end:0})"
+  # CURRENT_TIMESTAMP is ANSI SQL standard; dialects may override.
+  let now = -> s"CURRENT_TIMESTAMP"
+  # Clickhouse: https://clickhouse.com/docs/en/sql-reference/functions/date-time-functions#date_trunc
+  # DuckDB: https://duckdb.org/docs/sql/functions/timestamp#date_truncdate_part-timestamp
+  # MariaDB: https://mariadb.com/kb/en/date_format/
+  # MySQL: https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html#function_date-trunc
+  # Postgres: https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
+  # SQLite: https://www.sqlite.org/lang_datefunc.html
+  # MSSQL: https://learn.microsoft.com/en-us/sql/t-sql/functions/datetrunc-transact-sql
+  # BigQuery: https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#date_trunc
+  # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/date_trunc
+  let trunc = unit column -> s"DATE_TRUNC({unit:0}, {column:0})"
+}
+
 # Source-reading functions, primarily for DuckDB
 let read_parquet = binary_as_string file_row_number hive_partitioning union_by_name source -> s"read_parquet({source:0})"
 let read_csv = source -> s"read_csv({source:0})"
@@ -199,6 +223,14 @@ module bigquery {
     let radians = column -> s"({column:0} * PI() / 180)"
   }
 
+  module date {
+    let to_text = format column -> s"FORMAT_TIMESTAMP({format:0}, CAST({column:0} AS TIMESTAMP))"
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#date_diff
+    let diff = unit start end -> s"DATE_DIFF({end:0}, {start:0}, {unit:0})"
+    # BigQuery requires parentheses for CURRENT_TIMESTAMP
+    let now = -> s"CURRENT_TIMESTAMP()"
+  }
+
   let regex_search = text pattern -> s"REGEXP_CONTAINS({text:0}, {pattern:0})"
 }
 
@@ -214,6 +246,10 @@ module clickhouse {
   module date {
     # https://clickhouse.com/docs/en/sql-reference/functions/date-time-functions
     let to_text = format column -> s"formatDateTimeInJodaSyntax({column:0}, {format:0})"
+    # https://clickhouse.com/docs/en/sql-reference/functions/date-time-functions#dateDiff
+    let diff = unit start end -> s"dateDiff('{unit:0}', {start:0}, {end:0})"
+    # Clickhouse uses now() for current timestamp
+    let now = -> s"now()"
   }
 
   let regex_search = text pattern -> s"match({text:0}, {pattern:0})"
@@ -240,6 +276,8 @@ module duckdb {
   module date {
     # https://duckdb.org/docs/sql/functions/dateformat
     let to_text = format column -> s"strftime({column:0}, {format:0})"
+    # https://duckdb.org/docs/sql/functions/date
+    let diff = unit start end -> s"datediff('{unit:0}', {start:0}, {end:0})"
   }
 
   let regex_search = text pattern -> s"REGEXP_MATCHES({text:0}, {pattern:0})"
@@ -290,6 +328,12 @@ module mysql {
   module date {
     # https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html
     let to_text = format column -> s"DATE_FORMAT({column:0}, {format:0})"
+    # https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_timestampdiff
+    let diff = unit start end -> s"TIMESTAMPDIFF({unit:0}, {start:0}, {end:0})"
+    # MySQL uses NOW() function
+    let now = -> s"NOW()"
+    # https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html#function_date-trunc
+    let trunc = unit column -> s"DATE_TRUNC({unit:0}, {column:0})"
   }
 
   # 'c' for case-sensitive
@@ -320,6 +364,8 @@ module postgres {
   module date {
     # https://www.postgresql.org/docs/current/functions-formatting.html
     let to_text = format column -> s"TO_CHAR({column:0}, {format:0})"
+    # PostgreSQL has no built-in DATEDIFF equivalent
+    let diff = unit start end -> null
   }
 
   @{binding_strength=9}
@@ -373,7 +419,7 @@ module sqlite {
   let div_f = l r -> s"({l} * 1.0 / {r:12})"
 
   @{binding_strength=100}
-  let div_i = l r -> s"ROUND(ABS({l:11} / {r:12}) - 0.5) * SIGN({l:0}) * SIGN({r:0})"
+  let div_i = l r -> s"CAST(ABS({l:11} * 1.0 / {r:12}) AS INTEGER) * SIGN({l:0}) * SIGN({r:0})"
 
   # Text functions
   module text {
@@ -382,6 +428,13 @@ module sqlite {
     let starts_with = prefix column -> s"{column:0} LIKE {prefix:0} || '%'"
     let contains = substr column -> s"{column:0} LIKE '%' || {substr:0} || '%'"
     let ends_with = suffix column -> s"{column:0} LIKE '%' || {suffix:0}"
+  }
+
+  # Date functions
+  module date {
+    # SQLite has no built-in date diff function
+    let diff = unit start end -> null
+    let trunc = unit column -> null
   }
 
   @{binding_strength=9}

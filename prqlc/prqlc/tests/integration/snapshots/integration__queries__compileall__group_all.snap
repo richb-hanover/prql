@@ -59,7 +59,6 @@ input_file: prqlc/prqlc/tests/integration/queries/group_all.prql
  GROUP BY
    table_0.album_id,
 
-
 --- generic
 +++ postgres
 @@ -3,19 +3,22 @@

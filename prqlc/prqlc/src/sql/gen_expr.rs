@@ -108,6 +108,7 @@ pub(super) fn translate_expr(expr: rq::Expr, ctx: &mut Context) -> Result<ExprOr
                 "std.date.to_text" => {
                     return Ok(process_date_to_text(&expr, name, args, ctx)?.into())
                 }
+                "std.date.trunc" => return Ok(process_date_trunc(&expr, name, args, ctx)?.into()),
                 _ => match try_into_between(expr.clone(), ctx)? {
                     Some(between_expr) => return Ok(between_expr.into()),
                     None => {
@@ -205,6 +206,92 @@ fn process_array_in(
             Error::new_simple("args to `std.array_in` must be an expression and an array")
                 .with_span(expr.span),
         ),
+    }
+}
+
+/// Translates PRQL date truncation to dialect-specific SQL.
+/// BigQuery uses unquoted uppercase date_part after the column: DATE_TRUNC(col, DAY)
+/// MSSQL uses unquoted lowercase datepart before the column: DATETRUNC(day, col)
+/// All other dialects use: DATE_TRUNC('unit', col)
+fn process_date_trunc(
+    expr: &rq::Expr,
+    op_name: &str,
+    args: &[rq::Expr],
+    ctx: &mut Context,
+) -> Result<sql_ast::Expr> {
+    if let [unit_expr @ rq::Expr {
+        kind: rq::ExprKind::Literal(Literal::String(unit)),
+        ..
+    }, col_expr] = args
+    {
+        use crate::sql::dialect::{BigQueryDialect, MsSqlDialect};
+
+        if ctx.dialect.is::<BigQueryDialect>() {
+            // BigQuery: DATE_TRUNC(col, DAY) — unit is an unquoted uppercase keyword
+            let col = translate_expr(col_expr.clone(), ctx)?.into_ast();
+            let unit_upper = unit.to_uppercase();
+            return Ok(sql_ast::Expr::Function(Function {
+                name: ObjectName(vec![sqlparser::ast::ObjectNamePart::Identifier(
+                    sql_ast::Ident::new("DATE_TRUNC"),
+                )]),
+                args: sql_ast::FunctionArguments::List(FunctionArgumentList {
+                    args: vec![
+                        FunctionArg::Unnamed(FunctionArgExpr::Expr(col)),
+                        FunctionArg::Unnamed(FunctionArgExpr::Expr(sql_ast::Expr::Identifier(
+                            sql_ast::Ident::new(unit_upper),
+                        ))),
+                    ],
+                    clauses: vec![],
+                    duplicate_treatment: None,
+                }),
+                over: None,
+                filter: None,
+                null_treatment: None,
+                within_group: vec![],
+                parameters: sql_ast::FunctionArguments::None,
+                uses_odbc_syntax: false,
+            }));
+        } else if ctx.dialect.is::<MsSqlDialect>() {
+            // MSSQL: DATETRUNC(day, col) — unit is an unquoted lowercase keyword (SQL Server 2022+)
+            let col = translate_expr(col_expr.clone(), ctx)?.into_ast();
+            let unit_lower = unit.to_lowercase();
+            return Ok(sql_ast::Expr::Function(Function {
+                name: ObjectName(vec![sqlparser::ast::ObjectNamePart::Identifier(
+                    sql_ast::Ident::new("DATETRUNC"),
+                )]),
+                args: sql_ast::FunctionArguments::List(FunctionArgumentList {
+                    args: vec![
+                        FunctionArg::Unnamed(FunctionArgExpr::Expr(sql_ast::Expr::Identifier(
+                            sql_ast::Ident::new(unit_lower),
+                        ))),
+                        FunctionArg::Unnamed(FunctionArgExpr::Expr(col)),
+                    ],
+                    clauses: vec![],
+                    duplicate_treatment: None,
+                }),
+                over: None,
+                filter: None,
+                null_treatment: None,
+                within_group: vec![],
+                parameters: sql_ast::FunctionArguments::None,
+                uses_odbc_syntax: false,
+            }));
+        }
+
+        // All other dialects: DATE_TRUNC('unit', col) via the s-string in std.sql.prql
+        let expr = rq::Expr {
+            kind: rq::ExprKind::Operator {
+                name: op_name.to_string(),
+                args: vec![unit_expr.clone(), col_expr.clone()],
+            },
+            ..expr.clone()
+        };
+        Ok(super::operators::translate_operator_expr(expr, ctx)?.into_ast())
+    } else {
+        Err(
+            Error::new_simple("`std.date.trunc` only supports a string literal as unit")
+                .with_span(expr.span),
+        )
     }
 }
 
@@ -1133,53 +1220,53 @@ mod test {
 
         assert!(range_of_ranges(vec![range_1_10.clone()])?.end.is_some());
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_1_10.clone()])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_1_10.clone()])?, @"
         start: 1
         end: 10
         ");
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_1_10.clone(), range_1_10.clone()])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_1_10.clone(), range_1_10.clone()])?, @"
         start: 1
         end: 10
         ");
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_1_10.clone(), range_5_6.clone()])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_1_10.clone(), range_5_6.clone()])?, @"
         start: 5
         end: 6
         ");
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_5_6.clone(), range_1_10.clone()])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_5_6.clone(), range_1_10.clone()])?, @"
         start: 5
         end: 6
         ");
 
         // empty range
-        assert_yaml_snapshot!(range_of_ranges(vec![range_5_6.clone(), range_5_6.clone()])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_5_6.clone(), range_5_6.clone()])?, @"
         start: ~
         end: 0
         ");
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_5_inf.clone(), range_5_inf.clone()])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_5_inf.clone(), range_5_inf.clone()])?, @"
         start: 9
         end: ~
         ");
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_1_10, range_5_inf])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_1_10, range_5_inf])?, @"
         start: 5
         end: 10
         ");
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_5_6, range_inf_8.clone()])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_5_6, range_inf_8.clone()])?, @"
         start: 5
         end: 6
         ");
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_inf_8.clone(), range_inf_8])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_inf_8.clone(), range_inf_8])?, @"
         start: ~
         end: 8
         ");
 
-        assert_yaml_snapshot!(range_of_ranges(vec![range_5_5])?, @r"
+        assert_yaml_snapshot!(range_of_ranges(vec![range_5_5])?, @"
         start: 5
         end: 5
         ");

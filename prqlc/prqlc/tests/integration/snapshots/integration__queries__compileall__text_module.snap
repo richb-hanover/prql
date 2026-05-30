@@ -67,7 +67,6 @@ input_file: prqlc/prqlc/tests/integration/queries/text_module.prql
    low,
    up,
 
-
 --- generic
 +++ mssql
 @@ -1,20 +1,20 @@

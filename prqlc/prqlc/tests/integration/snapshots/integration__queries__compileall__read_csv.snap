@@ -63,7 +63,6 @@ input_file: prqlc/prqlc/tests/integration/queries/read_csv.prql
  ORDER BY
    media_type_id
 
-
 --- generic
 +++ glaredb
 @@ -1,15 +1,15 @@
