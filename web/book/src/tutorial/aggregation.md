@@ -6,20 +6,21 @@ is called "aggregation" and always includes a function &mdash; for example,
 
 ### `aggregate` transform
 
-The `aggregate` transform takes a tuple to create one or more new columns that
-"distill down" data from all the rows.
+The `aggregate` transform takes a tuple to create a single row with one or more new columns that
+"distill down" data from the named columns.
+`aggregate` discards other columns that are
+not named in the tuple.
+
 
 ```prql no-eval
 from invoices
 aggregate { sum_of_orders = sum total }
 ```
 
-The query above computes the sum of the `total` column of all rows of the
-`invoices` table to produce a single value.
+The query above creates a single row with one column named `sum_of_orders` and a value that is the sum of the values of the`total` column.
 
-`aggregate` can produce multiple summaries at once when one or more aggregation
-expressions are contained in a tuple. `aggregate` discards all columns that are
-not present in the tuple.
+`aggregate` can produce multiple columns: one for each
+expression in the tuple. 
 
 ```prql no-eval
 from invoices
@@ -48,12 +49,13 @@ But we would need to do it for each city: `London`, `Frankfurt`, etc. Of course
 this is repetitive (and boring) and error prone (because we would need to type
 each `billing_city` by hand). Moreover, we would need to create a list of each
 `billing_city` before we started.
+There's an alternative...
 
 ### `group` transform
 
-The `group` transform separates the table into groups (say, those having the
-same city) using information that's already in the table. It then applies a
-transform to each group, and combines the results back together:
+The `group` transform uses information that's already present in the table to separate the rows into groups (say, those rows having the
+same city). It then applies a
+transform to each group, and combines the results back together, along with the columns named in the `group` transform.
 
 ```prql no-eval
 from invoices
@@ -65,18 +67,27 @@ group billing_city (
 )
 ```
 
-Those familiar with SQL have probably noticed that we just decoupled aggregation
-from grouping.
+The result of this example is a relation with as many rows as there were cities in the `invoices` relation. Each row has _three_ columns: 
 
-Although these operations are connected in SQL, PRQL makes it straightforward to
-use `group` and `aggregate` separate from each other, while combining with other
-transform functions, such as:
+* `billing_city` (because the "grouping criteria" get passed through), 
+* `num_orders` (calculated for each city), and
+* `sum_of_orders` (the sum of the orders for each city. 
+
+Here's a more complex example that demonstrates that the group's transform - the lines within `( ... )` - can have multiple steps. The following code groups `invoices` by city, then executes the multi-step transform that sorts the `total` for _each_ city, then takes two rows (the two largest) for each city. The example then recombines those sets of two rows to produce the final result. 
 
 ```prql no-eval
 from invoices
 group billing_city (
+    sort total
     take 2
 )
 ```
 
-This code collects the first two rows for each city's `group`.
+The `aggregate` transform changes the number of columns to those named in the statement. The `group` transform passes all the columns through. 
+
+> [!NOTE]
+> Those familiar with SQL may have noticed that this has decoupled aggregation from grouping.
+>
+> Although these operations are connected in SQL, PRQL makes it straightforward to
+use `group` and `aggregate` separately from each other, while still combining with other
+transforms. 

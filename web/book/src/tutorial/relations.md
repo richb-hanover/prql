@@ -48,8 +48,10 @@ The `select` function picks the columns to pass through based on a list and
 discards all others. Formally, that list is a _tuple_ of comma-separated
 expressions wrapped in `{ ... }`.
 
-Suppose we only need the `order_id` and `total` columns. Use `select` to choose
-the columns to pass through. _(Try it in the
+Suppose we only need the `order_id` and `total` columns. Use `select` &mdash; the named columns pass through
+to the next transform.
+None of the other columns do.
+_(Try it in the
 [Playground.](https://prql-lang.org/playground/))_
 
 ```prql no-eval
@@ -72,7 +74,8 @@ select {
 This is the same query as above, rewritten on multiple lines, and assigning
 `OrderID` and `Total` names to the columns.
 
-Once we `select` certain columns, subsequent transforms will have access only to
+Once we `select` certain columns,
+subsequent transforms have access only to
 those columns named in the tuple.
 
 ### `derive` transform
@@ -85,11 +88,14 @@ from invoices
 derive { VAT = total * 0.19 }
 ```
 
-<!-- todo: make sure that the new column is unnamed -->
-
-The value of the new column can be a constant (such as a number or a string), or
-can be computed from the value of an existing column. Note that the value of the
-new column is assigned the name `VAT`.
+The result of this transform is to pass through
+all of the existing columns as well as the new
+"derived" column.
+The values for the new column can be a constant
+(such as a number or a string), or
+can be computed from the value of an existing column.
+NB In this example, the new column
+is assigned the name `VAT`.
 
 ### `join` transform
 
@@ -102,21 +108,26 @@ from invoices
 join customers ( ==customer_id )
 ```
 
-This example "connects" the customer information from the `customers` relation
-with the information from the `invoices` relation, using identical values of the
-`customer_id` column from each relation to match the rows.
+This example "connects" the `invoices` and `customers` relations
+by creating new rows that include all columns from each relation.
+The `customer_id` column is used to match the rows.
+If there are identical values in the `customer_id` 
+column in each relation, the rows are joined.
 
-It is frequently useful to assign an alias to both relations being joined
+It is frequently useful to assign an _alias_ to both relations being joined
 together so that each relation's columns can be referred to uniquely.
 
 ```prql no-eval
 from inv=invoices
-join cust=customers ( ==customer_id )
+join cust=customers ( inv.customer_id == cust.customer_id)
 ```
 
 In the example above, the alias `inv` represents the `invoices` relation and
-`cust` represents the `customers` relation. It then becomes possible to refer to
+`cust` represents the `customers` relation.
+Aliases also make it possible to refer to
 `inv.billing_city` and `cust.last_name` unambiguously.
+
+The query above has the same result as the previous query: `==customer_id` is shorthand for using the same column name from both relations. 
 
 ### Summary
 
@@ -125,21 +136,19 @@ transforms change the number of columns in a table. The first two never affect
 the number of rows in a table. `join` may change the number of rows, depending
 on the chosen type of join.
 
-This final example combines the above into a single query. It illustrates _a
-pipeline_ - the fundamental basis of PRQL. We simply add new lines (transforms)
+This final example combines these transforms into a single query. It illustrates _a pipeline_ -
+the fundamental basis of PRQL. We simply add new lines (transforms)
 at the end of the query. Each transform modifies the relation produced by the
-statement above to produce the desired result.
+statement above to produce the final result.
 
 ```prql no-eval
-from inv=invoices
-join cust=customers (==customer_id)
-derive { VAT = inv.total * 0.19 }
-select {
-  OrderID = inv.invoice_id,
-  CustomerName = cust.last_name,
+from inv=invoices                    # start with invoices
+join cust=customers (==customer_id)  # join with customers
+derive { VAT = inv.total * 0.19 }    # add a "VAT" column
+select {                             # and select four columns
+  OrderID = inv.invoice_id,          #   giving many of them
+  CustomerName = cust.last_name,     #   different column names
   Total = inv.total,
   VAT,
 }
 ```
-
-<!-- PRQL uses the data from... _Where does our data come from? Do we use some canonical version?_ -->
