@@ -22,8 +22,8 @@ or `HAVING` command, depending on where it appears in the pipeline.
 
 ### `take` transform
 
-The `take` transform picks rows to pass through based on their position within
-the table. The set of rows picked can be specified in two ways:
+The `take` transform picks the rows to pass through based on their position
+within the table. The set of rows picked can be specified in two ways:
 
 - a plain number `x`, which will pick the first `x` rows, or
 - an inclusive range of rows `start..end`.

@@ -26,11 +26,22 @@ designated data type. The table above is a relation, and has columns named
 ## Queries
 
 The main purpose of PRQL is to build queries that combine and transform data
-from relations such as the `invoices` table above. Here is the most basic query:
+from relations such as the `invoices` table above. Queries are built up from a
+series of _transforms_ that take a relation, "transform it" in some way, and
+then pass the result along to the next transform.
+
+### `from` transform
+
+The `from` transform begins every PRQL query. It takes the name of one of the
+tables in the database and passes the data of that relation along to whatever
+follows.
 
 ```prql no-eval
 from invoices
 ```
+
+The result of the query above is not terribly interesting, it's just the same
+relation as before.
 
 <!-- prettier-ignore -->
 > [!NOTE]
@@ -39,16 +50,13 @@ from invoices
 > left-hand side, and click the **Query Results** tab on the right-hand side to
 > see the result.
 
-The result of the query above is not terribly interesting, it's just the same
-relation as before.
-
 ### `select` transform
 
 The `select` function picks the columns to pass through based on a list and
 discards all others. Formally, that list is a _tuple_ of comma-separated
 expressions wrapped in `{ ... }`.
 
-Suppose we only need the `order_id` and `total` columns. Use `select` &mdash;
+Suppose we only need the `invoice_id` and `total` columns. Use `select` &mdash;
 the named columns pass through to the next transform. None of the other columns
 do. _(Try it in the [Playground.](https://prql-lang.org/playground/))_
 
@@ -59,7 +67,7 @@ select { invoice_id, total }
 
 We can write the items in the tuple on one or several lines: trailing commas are
 ignored. In addition, we can assign any of the expressions to a _variable_ that
-becomes the name of the resulting column in the SQL output.
+becomes the name of the resulting column in the transform's output.
 
 ```prql no-eval
 from invoices
@@ -123,14 +131,14 @@ shorthand for using the same column name from both relations.
 
 ### Summary
 
-PRQL manipulates relations (tables) of data. The `derive`, `select`, and `join`
-transforms change the number of columns in a table. The first two never affect
-the number of rows in a table. `join` may change the number of rows, depending
-on the chosen type of join.
+PRQL manipulates relations (tables) of data. The `from` transform begins a
+query. The `derive`, `select`, and `join` transforms change the number of
+columns in a table. The first two never affect the number of rows in a table.
+`join` may change the number of rows, depending on the chosen type of join.
 
 This final example combines these transforms into a single query. It illustrates
-_a pipeline_ - the fundamental basis of PRQL. We simply add new lines
-(transforms) at the end of the query. Each transform modifies the relation
+a _pipeline_ - the fundamental basis of PRQL. We simply add new lines
+(transforms) at the end to build the query. Each transform modifies the relation
 produced by the statement above to produce the final result.
 
 ```prql no-eval
